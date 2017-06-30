@@ -8,11 +8,10 @@
 
 using namespace std;
 
-#define maxV 1010
-
-int f[maxV][maxV];
+// int f[10000][10000];
+map< pair<int,int>, int > f;
 vector< vector <int> > g;
-int parent[maxV];
+int parent[10000];
 int s, t;
 
 int hasAugmenting() { //bfs
@@ -20,8 +19,8 @@ int hasAugmenting() { //bfs
     memset(parent, -1, sizeof(parent));
     parent[s] = -2;
     q.push(s);
-    int C[g.size()] = {1e9};
-
+    vector<int> C(g.size());
+    C[s] = 1e9;
     int u, v;
     bool encontre = false;
     while(!q.empty()) {
@@ -29,35 +28,33 @@ int hasAugmenting() { //bfs
         //cerr << " curr  " << u << endl;
         for(int i = 0; i < g[u].size(); i++) {
             v = g[u][i];
-            if(parent[v] == -1 && f[u][v] > 0) {
+            if(parent[v] == -1 && f[make_pair(u,v)] > 0) {
                 q.push(v);
                 parent[v] = u;
-                C[v] = min(C[u], f[u][v]);
+                C[v] = min(C[u], f[make_pair(u,v)]);
                 if (v == t) return C[v];
             }
         }
     }
     return 0;
 }
+vector<string> reverseMap;
 
 int edmonsKarp() {
     int flow = 0;
     while(true) {
         int c = hasAugmenting();
-        cerr << "augmenting " << c << endl;
         if(c == 0) return flow;
         flow += c;
-        cerr << "curr flow " << c << endl;
         int v = t;
         while(v != s) {
             int p = parent[v];
-            f[p][v] -= c;
-            f[v][p] += c;
+            f[make_pair(p, v)] -= c;
+            f[make_pair(v, p)] += c;
 
             v = p;
         }
     }
-    cerr << "voy a retornar " << flow << endl;
     return flow;
 }
 
@@ -70,17 +67,16 @@ int main() {
     getchar();
     getchar();
     while(cases--) {
-        g.assign(1, vector<int>());
-        
+        g.assign(10002, vector<int>());
+        f.clear();
         int index = 1;
         map<string, int> party;
         map<string, int> person;
         map<string, int> club;
-        vector<string> reverseMap;
-        memset(f, 0, sizeof(f));
+        reverseMap.clear();
+        reverseMap.push_back("source");
         string s;
         int indP, indPar, indC;
-        cerr << "antes" << endl;
         while(getline(cin, line) && line != "") {
             stringstream ss;
             ss << line;
@@ -91,7 +87,6 @@ int main() {
             } else {
                 reverseMap.push_back(s);
                 indP = person[s] = index++;
-                g.push_back(vector<int>());
             }
 
             ss >> s;
@@ -101,9 +96,12 @@ int main() {
             } else {
                 reverseMap.push_back(s);
                 indPar = party[s] = index++;
-                g.push_back(vector<int>());
             }
             
+            g[indPar].push_back(indP);
+            g[indP].push_back(indPar);
+            f[make_pair(indPar, indP)] = 1;
+            f[make_pair(indP, indPar)] = 0;
 
             while(ss >> s) {
                 it = club.find(s);
@@ -112,58 +110,43 @@ int main() {
                 } else {
                     reverseMap.push_back(s);
                     indC = club[s] = index++;
-                    g.push_back(vector<int>());
                 }
+
+                g[indP].push_back(indC);
+                g[indC].push_back(indP);
+                f[make_pair(indP, indC)] = 1;
+                f[make_pair(indC, indP)] = 0;
             }
 
-            
-            g[indPar].push_back(indP);
-            g[indP].push_back(indPar);
-
-            g[indP].push_back(indC);
-            g[indC].push_back(indP);
-
-            f[indPar][indP] = 1;
-            f[indP][indPar] = 0;
-
-            f[indP][indC] = 1;
-            f[indC][indP] = 0;
-
-            cerr << "index " << index << endl;
         }
         t = index;
-        cerr << "t: " << t << endl;
         for(it = club.begin(); it != club.end(); it++) {
             g[it->second].push_back(t);
-            f[it->second][t] = 1;
-            f[t][it->second] = 0;
+            f[make_pair(it->second, t)] = 1;
         }
 
         for(it = party.begin(); it != party.end(); it++) {
             g[0].push_back(it->second);
-            f[0][it->second] = club.size()-1 / 2;
-            f[it->second][0] = 0;
+            f[make_pair(0, it->second)] = (club.size()-1) / 2;
         }
+        reverseMap.push_back("target");
 
-        for(int i = 0; i < g.size(); i++) {
-            cerr << i << ": ";
-            for(int j = 0; j < g.size(); j++) {
-                cerr << f[i][j] << " - ";
-            }
-            cerr << endl;
-        }
-
-        cout << "flow " << edmonsKarp() << '\n';
-
-        for(it = person.begin(); it != person.end(); it++) {
-            for(int i = 0; i < g[it->second].size(); i++) {
-                int v = g[it->second][i];
-                if(f[it->second][v] == 0) {
-                    cout << it->first << " " << reverseMap[v-1] << endl;
-                    break;
+        int flow = edmonsKarp();
+        if (flow < club.size()) cout << "Impossible.\n";
+        else {
+            for(it = club.begin(); it != club.end(); it++) {
+                for(int i = 0; i < g[it->second].size(); i++) {
+                    int v = g[it->second][i];
+                    if(v == t) continue;
+                    if(f[make_pair(it->second, v)] == 1) {
+                        cout << reverseMap[v] << " " << it->first << "\n";
+                        break;
+                    }
                 }
             }
         }
+        
+        if (cases) cout << '\n';
     }
     
     return 0;
