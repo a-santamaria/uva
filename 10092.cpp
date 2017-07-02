@@ -80,14 +80,6 @@ int main() {
             }
         }
 
-        // for(int i = 0; i < g.size(); i++) {
-        //     cerr << i << ": ";
-        //     for(int j = 0; j < g[i].size(); j++) {
-        //         cerr << g[i][j] << " ";
-        //     }
-        //     cerr << endl;
-        // }
-
         int flow = edmondsKarp();
 
         if(flow == sumFlow) {
