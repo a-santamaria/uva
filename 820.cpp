@@ -22,8 +22,8 @@ int hasAugmenting() {
     memset(parent, -1, sizeof parent);
     int u, v;
     parent[S] = -2;
-    int C[MAX_NODES] = {INF};
-
+    int C[MAX_NODES];
+    C[S] = INF;
     queue<int> q;
     q.push(S);
     while (!q.empty()) {
@@ -31,6 +31,7 @@ int hasAugmenting() {
         for (int i = 0; i < g[u].size(); i++) {
             v = g[u][i];
             if (parent[v] == -1 && f[u][v] > 0) {
+                
                 q.push(v);
                 parent[v] = u;
                 C[v] = min(C[u], f[u][v]);
@@ -70,8 +71,8 @@ int main() {
             cin >> x >> y >> cap;
             g[x].push_back(y);
             g[y].push_back(x);
-            f[x][y] = cap;
-            f[y][x] = cap;
+            f[x][y] += cap;
+            f[y][x] += cap;
         }
         cout << "Network " << cont++ << '\n';
         cout << "The bandwidth is " << ford_fulkerson() << ".\n\n";
